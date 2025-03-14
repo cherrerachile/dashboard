@@ -31,32 +31,32 @@
         padding-bottom: 5px;
         border-bottom: 1px solid #e0e0e0;
       }
-      #filters {
-        grid-row: 1;
-        grid-column: 1 / -1;
-      }
-      #careerChartCard {
-        grid-row: 2;
-        grid-column: 1 / 2;
-      }
-      #typeChartCard {
-        grid-row: 2;
-        grid-column: 2 / 3;
-      }
-      #gratuityChartCard {
-        grid-row: 2;
-        grid-column: 3 / 4;
-      }
-      #studentTableCard {
-        grid-row: 3 / 5;
-        grid-column: 1 / -1;
-      }
       #totalStudentsCard {
-        grid-row: 5;
+        grid-row: 1;
         grid-column: 1 / -1;
       }
       #totalStudentsCard h3 {
         color: #28A745;
+      }
+      #careerChartCard {
+        grid-row: 2;
+        grid-column: 1 / -1;
+      }
+      #typeChartCard {
+        grid-row: 3;
+        grid-column: 1 / 2;
+      }
+      #gratuityChartCard {
+        grid-row: 3;
+        grid-column: 2 / 3;
+      }
+      #filters {
+        grid-row: 4;
+        grid-column: 1 / -1;
+      }
+      #studentTableCard {
+        grid-row: 5;
+        grid-column: 1 / -1;
       }
       table {
         width: 100%;
@@ -70,6 +70,13 @@
       table th {
         background-color: #f5f5f5;
         color: #333;
+      }
+      #studentTable td, #studentTable th {
+        font-size: 12px; /* Tipografía más pequeña para la lista de estudiantes */
+      }
+      #totalStudentsTable {
+        background-color: #f5f5f5;
+        margin-top: 10px;
       }
       select, button {
         margin: 5px 0;
@@ -94,18 +101,18 @@
   </head>
   <body>
     <div id="dashboard">
-      <div class="dashboard-item" id="filters">
-        <h3>Filtros</h3>
-        <label for="careerSelect">Carrera:</label>
-        <select id="careerSelect"></select>
-        <br>
-        <label for="typeSelect">Tipo de Alumno:</label>
-        <select id="typeSelect"></select>
-        <br>
-        <label for="gratuitySelect">Gratuidad:</label>
-        <select id="gratuitySelect"></select>
-        <br>
-        <button id="resetFilters">Resetear Filtros</button>
+      <div class="dashboard-item" id="totalStudentsCard">
+        <h3>Total de Alumnos</h3>
+        <p id="totalStudentsText">Cargando...</p>
+        <table id="totalStudentsTable">
+          <thead>
+            <tr>
+              <th>Carrera</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody id="totalStudentsTableBody"></tbody>
+        </table>
       </div>
       <div class="dashboard-item" id="careerChartCard">
         <h3>Estudiantes por Carrera</h3>
@@ -118,6 +125,19 @@
       <div class="dashboard-item" id="gratuityChartCard">
         <h3>Distribución de Gratuidad</h3>
         <canvas id="gratuityChart"></canvas>
+      </div>
+      <div class="dashboard-item" id="filters">
+        <h3>Filtros</h3>
+        <label for="careerSelect">Carrera:</label>
+        <select id="careerSelect"></select>
+        <br>
+        <label for="typeSelect">Tipo de Alumno:</label>
+        <select id="typeSelect"></select>
+        <br>
+        <label for="gratuitySelect">Gratuidad:</label>
+        <select id="gratuitySelect"></select>
+        <br>
+        <button id="resetFilters">Resetear Filtros</button>
       </div>
       <div class="dashboard-item" id="studentTableCard">
         <h3>Lista de Estudiantes</h3>
@@ -137,10 +157,6 @@
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
-      </div>
-      <div class="dashboard-item" id="totalStudentsCard">
-        <h3>Total de Alumnos</h3>
-        <p id="totalStudentsText">Cargando...</p>
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
@@ -175,8 +191,8 @@
       function filterData(data, filters) {
         return data.filter(student => {
           const careerMatch = filters.career === 'All' || student['CARRERA 2024'] === filters.career;
-          const typeMatch = filters.type === 'All' || student[' Tipo Alumno'] === filters.type;
-          const gratuidadMatch = filters.gratuidad === 'All' || student.Gratuidad === filters.gratuidad;
+          const typeMatch = filters.type === 'All' || student['Tipo Alumno'] === filters.type;
+          const gratuidadMatch = filters.gratuidad === 'All' || student['Gratuidad'] === filters.gratuidad;
           return careerMatch && typeMatch && gratuidadMatch;
         });
       }
@@ -214,7 +230,7 @@
         if (typeChart) typeChart.destroy();
         const typeCounts = {};
         filteredData.forEach(student => {
-          const type = student[' Tipo Alumno'];
+          const type = student['Tipo Alumno']; // Corregido a "Tipo Alumno"
           typeCounts[type] = (typeCounts[type] || 0) + 1;
         });
         const labels = Object.keys(typeCounts);
@@ -242,7 +258,7 @@
         if (gratuityChart) gratuityChart.destroy();
         const gratuidadCounts = {};
         filteredData.forEach(student => {
-          const gratuidad = student.Gratuidad;
+          const gratuidad = student['Gratuidad'];
           gratuidadCounts[gratuidad] = (gratuidadCounts[gratuidad] || 0) + 1;
         });
         const labels = Object.keys(gratuidadCounts);
@@ -283,6 +299,19 @@
       function updateTotalStudents(filteredData) {
         const totalStudentsText = document.getElementById('totalStudentsText');
         totalStudentsText.textContent = `Total: ${filteredData.length} alumnos`;
+
+        const careerCounts = {};
+        filteredData.forEach(student => {
+          const career = student['CARRERA 2024'];
+          careerCounts[career] = (careerCounts[career] || 0) + 1;
+        });
+        const totalStudentsTableBody = document.getElementById('totalStudentsTableBody');
+        totalStudentsTableBody.innerHTML = '';
+        for (const [career, count] of Object.entries(careerCounts)) {
+          const row = document.createElement('tr');
+          row.innerHTML = `<td>${career}</td><td>${count}</td>`;
+          totalStudentsTableBody.appendChild(row);
+        }
       }
 
       function renderDashboard() {
@@ -301,7 +330,7 @@
         complete: results => {
           students = results.data;
           const careers = getUniqueValues(students, 'CARRERA 2024');
-          const types = getUniqueValues(students, ' Tipo Alumno');
+          const types = getUniqueValues(students, 'Tipo Alumno'); // Corregido a "Tipo Alumno"
           const gratuities = getUniqueValues(students, 'Gratuidad');
           populateSelect('careerSelect', ['All', ...careers]);
           populateSelect('typeSelect', ['All', ...types]);
