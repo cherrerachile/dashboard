@@ -1,27 +1,284 @@
 <html>
   <head>
-    <title>Mi Dashboard Estilo Power BI</title>
+    <title>Dashboard Alumnos Pendientes de Matrícula</title>
     <style>
       body { background-color: white; }
       #dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); grid-gap: 20px; }
-      .chart { border: 1px solid #ccc; padding: 20px; }
+      #filters { grid-column: 1 / -1; }
+      #careerChart { grid-column: 1 / 2; }
+      #typeChart { grid-column: 2 / 3; }
+      #gratuityChart { grid-column: 3 / 4; }
+      #studentTable { grid-column: 1 / -1; }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table th, table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      table th {
+        background-color: #f2f2f2;
+      }
     </style>
   </head>
   <body>
-    <div id="dashboard"></div>
+    <div id="dashboard">
+      <p>Bienvenido al Dashboard de Alumnos Pendientes de Matrícula. Usa los filtros para ver datos específicos.</p>
+      <div id="filters">
+        <label for="careerSelect">Carrera:</label>
+        <select id="careerSelect"></select>
+        <label for="typeSelect">Tipo de Alumno:</label>
+        <select id="typeSelect"></select>
+        <label for="gratuitySelect">Gratuidad:</label>
+        <select id="gratuitySelect"></select>
+        <button id="resetFilters">Resetear Filtros</button>
+      </div>
+      <div>
+        <canvas id="careerChart"></canvas>
+      </div>
+      <div>
+        <canvas id="typeChart"></canvas>
+      </div>
+      <div>
+        <canvas id="gratuityChart"></canvas>
+      </div>
+      <div id="studentTable">
+        <table>
+          <caption>Lista de Alumnos</caption>
+          <thead>
+            <tr>
+              <th>RUT</th>
+              <th>DV</th>
+              <th>AP. PATERNO</th>
+              <th>AP. MATERNO</th>
+              <th>NOMBRES</th>
+              <th>CARRERA 2024</th>
+              <th>Tipo Alumno</th>
+              <th>Gratuidad</th>
+            </tr>
+          </thead>
+          <tfoot></tfoot>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1/dist/chart.min.js"></script>
     <script>
-      Papa.parse('data.csv', { download: true, header: true, complete: (results) => {
-        const data = results.data;
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        document.getElementById('dashboard').appendChild(canvas);
-        const labels = data.map(row => row.date);
-        const values = data.map(row => row.sales);
-        new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Ventas', data: values, borderWidth: 1 }] }, 
-          options: { scales: { y: { beginAtZero: true } } } });
-      }});
+      window.students = null;
+      window.currentFilters = {
+        career: 'All',
+        type: 'All',
+        gratuity: 'All'
+      };
+      window.careerChart = null;
+      window.typeChart = null;
+      window.gratuityChart = null;
+
+      function getUniqueValues(data, column) {
+        const values = new Set();
+        data.forEach((row) => {
+          values.add(row[column]);
+        });
+        return Array.from(values);
+      }
+
+      function populateSelect(selectId, options) {
+        const select = document.getElementById(selectId);
+        options.forEach((option) => {
+          const opt = document.createElement('option');
+          opt.value = option;
+          opt.text = option;
+          select.appendChild(opt);
+        });
+      }
+
+      function filterData(data, filters) {
+        return data.filter((student) => {
+          const careerMatch = filters.career === 'All' || student['CARRERA 2024'] === filters.career;
+          const typeMatch = filters.type === 'All' || student[' Tipo Alumno'] === filters.type;
+          const gratuityMatch = filters.gratuity === 'All' || student.Gratuidad === filters.gratuity;
+          return careerMatch && typeMatch && gratuityMatch;
+        });
+      }
+
+      function createCareerChart(filteredData) {
+        if (window.careerChart) {
+          window.careerChart.destroy();
+        }
+        const careerCounts = {};
+        filteredData.forEach((student) => {
+          const career = student['CARRERA 2024'];
+          if (career in careerCounts) {
+            careerCounts[career]++;
+          } else {
+            careerCounts[career] = 1;
+          }
+        });
+        const labels = Object.keys(careerCounts);
+        const values = Object.values(careerCounts);
+        const ctx = document.getElementById('careerChart').getContext('2d');
+        window.careerChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'Número de Alumnos', data: values, borderWidth: 1, borderColor: '#0078D4', fill: false }]
+          },
+          options: {
+            title: {
+              display: true,
+              text: 'Alumnos por Carrera'
+            },
+            scales: { y: { beginAtZero: true } },
+            onClick: (event, activeElements) => {
+              if (activeElements.length > 0) {
+                const index = activeElements[0].index;
+                const career = labels[index];
+                window.currentFilters.career = career;
+                renderDashboard();
+              }
+            }
+          }
+        });
+      }
+
+      function createTypePieChart(filteredData) {
+        if (window.typeChart) {
+          window.typeChart.destroy();
+        }
+        const typeCounts = {};
+        filteredData.forEach((student) => {
+          const type = student[' Tipo Alumno'];
+          if (type in typeCounts) {
+            typeCounts[type]++;
+          } else {
+            typeCounts[type] = 1;
+          }
+        });
+        const labels = Object.keys(typeCounts);
+        const values = Object.values(typeCounts);
+        const ctx = document.getElementById('typeChart').getContext('2d');
+        window.typeChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [{ data: values, borderWidth: 1, backgroundColor: ['#0078D4', '#FFC000'] }]
+          },
+          options: {
+            title: {
+              display: true,
+              text: 'Tipos de Alumnos'
+            },
+            onClick: (event, activeElements) => {
+              if (activeElements.length > 0) {
+                const index = activeElements[0].index;
+                const type = labels[index];
+                window.currentFilters.type = type;
+                renderDashboard();
+              }
+            }
+          }
+        });
+      }
+
+      function createGratuidadPieChart(filteredData) {
+        if (window.gratuityChart) {
+          window.gratuityChart.destroy();
+        }
+        const gratuityCounts = {};
+        filteredData.forEach((student) => {
+          const gratuity = student.Gratuidad;
+          if (gratuity in gratuityCounts) {
+            gratuityCounts[gratuity]++;
+          } else {
+            gratuityCounts[gratuity] = 1;
+          }
+        });
+        const labels = Object.keys(gratuityCounts);
+        const values = Object.values(gratuityCounts);
+        const ctx = document.getElementById('gratuityChart').getContext('2d');
+        window.gratuityChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [{ data: values, borderWidth: 1, backgroundColor: ['#0078D4', '#FFC000'] }]
+          },
+          options: {
+            title: {
+              display: true,
+              text: 'Estado de Gratuidad'
+            },
+            onClick: (event, activeElements) => {
+              if (activeElements.length > 0) {
+                const index = activeElements[0].index;
+                const gratuity = labels[index];
+                window.currentFilters.gratuity = gratuity;
+                renderDashboard();
+              }
+            }
+          }
+        });
+      }
+
+      function createTable(filteredData) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        filteredData.forEach((student) => {
+          const row = document.createElement('tr');
+          for (const key in student) {
+            const cell = document.createElement('td');
+            cell.textContent = student[key];
+            row.appendChild(cell);
+          }
+          tableBody.appendChild(row);
+        });
+      }
+
+      function renderDashboard() {
+        const filteredData = filterData(window.students, window.currentFilters);
+        createCareerChart(filteredData);
+        createTypePieChart(filteredData);
+        createGratuidadPieChart(filteredData);
+        createTable(filteredData);
+      }
+
+      Papa.parse('data.csv', {
+        download: true,
+        header: true,
+        complete: (results) => {
+          window.students = results.data;
+          window.careers = getUniqueValues(window.students, 'CARRERA 2024');
+          window.types = getUniqueValues(window.students, ' Tipo Alumno');
+          window.gratuities = getUniqueValues(window.students, 'Gratuidad');
+          populateSelect('careerSelect', ['All', ...window.careers]);
+          populateSelect('typeSelect', ['All', ...window.types]);
+          populateSelect('gratuitySelect', ['All', ...window.gratuities]);
+          document.getElementById('careerSelect').addEventListener('change', (e) => {
+            window.currentFilters.career = e.target.value;
+            renderDashboard();
+          });
+          document.getElementById('typeSelect').addEventListener('change', (e) => {
+            window.currentFilters.type = e.target.value;
+            renderDashboard();
+          });
+          document.getElementById('gratuitySelect').addEventListener('change', (e) => {
+            window.currentFilters.gratuity = e.target.value;
+            renderDashboard();
+          });
+          document.getElementById('resetFilters').addEventListener('click', () => {
+            window.currentFilters.career = 'All';
+            window.currentFilters.type = 'All';
+            window.currentFilters.gratuity = 'All';
+            renderDashboard();
+          });
+          renderDashboard();
+        },
+        error: (error) => {
+          console.error('Error cargando datos:', error);
+          document.getElementById('dashboard').innerHTML = '<p>Error cargando datos. Por favor, verifica el archivo CSV.</p>';
+        }
+      });
     </script>
   </body>
 </html>
