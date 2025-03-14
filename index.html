@@ -11,6 +11,7 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         grid-gap: 20px;
+        grid-template-rows: auto auto auto auto auto;
       }
       .dashboard-item {
         border: 1px solid #e0e0e0;
@@ -31,7 +32,31 @@
         border-bottom: 1px solid #e0e0e0;
       }
       #filters {
+        grid-row: 1;
         grid-column: 1 / -1;
+      }
+      #careerChartCard {
+        grid-row: 2;
+        grid-column: 1 / 2;
+      }
+      #typeChartCard {
+        grid-row: 2;
+        grid-column: 2 / 3;
+      }
+      #gratuityChartCard {
+        grid-row: 2;
+        grid-column: 3 / 4;
+      }
+      #studentTableCard {
+        grid-row: 3 / 5;
+        grid-column: 1 / -1;
+      }
+      #totalStudentsCard {
+        grid-row: 5;
+        grid-column: 1 / -1;
+      }
+      #totalStudentsCard h3 {
+        color: #28A745;
       }
       table {
         width: 100%;
@@ -69,34 +94,32 @@
   </head>
   <body>
     <div id="dashboard">
-      <div class="dashboard-item">
+      <div class="dashboard-item" id="filters">
         <h3>Filtros</h3>
-        <div id="filters">
-          <label for="careerSelect">Carrera:</label>
-          <select id="careerSelect"></select>
-          <br>
-          <label for="typeSelect">Tipo de Alumno:</label>
-          <select id="typeSelect"></select>
-          <br>
-          <label for="gratuitySelect">Gratuidad:</label>
-          <select id="gratuitySelect"></select>
-          <br>
-          <button id="resetFilters">Resetear Filtros</button>
-        </div>
+        <label for="careerSelect">Carrera:</label>
+        <select id="careerSelect"></select>
+        <br>
+        <label for="typeSelect">Tipo de Alumno:</label>
+        <select id="typeSelect"></select>
+        <br>
+        <label for="gratuitySelect">Gratuidad:</label>
+        <select id="gratuitySelect"></select>
+        <br>
+        <button id="resetFilters">Resetear Filtros</button>
       </div>
-      <div class="dashboard-item">
+      <div class="dashboard-item" id="careerChartCard">
         <h3>Estudiantes por Carrera</h3>
         <canvas id="careerChart"></canvas>
       </div>
-      <div class="dashboard-item">
+      <div class="dashboard-item" id="typeChartCard">
         <h3>Tipos de Alumnos</h3>
         <canvas id="typeChart"></canvas>
       </div>
-      <div class="dashboard-item">
+      <div class="dashboard-item" id="gratuityChartCard">
         <h3>Distribución de Gratuidad</h3>
         <canvas id="gratuityChart"></canvas>
       </div>
-      <div class="dashboard-item">
+      <div class="dashboard-item" id="studentTableCard">
         <h3>Lista de Estudiantes</h3>
         <table id="studentTable">
           <caption>Lista de Alumnos</caption>
@@ -112,9 +135,12 @@
               <th>Gratuidad</th>
             </tr>
           </thead>
-          <tfoot></tfoot>
           <tbody id="tableBody"></tbody>
         </table>
+      </div>
+      <div class="dashboard-item" id="totalStudentsCard">
+        <h3>Total de Alumnos</h3>
+        <p id="totalStudentsText">Cargando...</p>
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
@@ -156,17 +182,11 @@
       }
 
       function createCareerChart(filteredData) {
-        if (careerChart) {
-          careerChart.destroy();
-        }
+        if (careerChart) careerChart.destroy();
         const careerCounts = {};
         filteredData.forEach(student => {
           const career = student['CARRERA 2024'];
-          if (career in careerCounts) {
-            careerCounts[career]++;
-          } else {
-            careerCounts[career] = 1;
-          }
+          careerCounts[career] = (careerCounts[career] || 0) + 1;
         });
         const labels = Object.keys(careerCounts);
         const values = Object.values(careerCounts);
@@ -175,23 +195,14 @@
           type: 'bar',
           data: {
             labels: labels,
-            datasets: [{ label: 'Número de Estudiantes', data: values, borderWidth: 1, borderColor: '#0078D4', backgroundColor: '#0078D4', fill: false }]
+            datasets: [{ label: 'Número de Estudiantes', data: values, borderWidth: 1, borderColor: '#0078D4', backgroundColor: '#0078D4' }]
           },
           options: {
-            title: {
-              display: true,
-              text: 'Estudiantes por Carrera'
-            },
-            scales: {
-              y: {
-                beginAtZero: true
-              }
-            },
+            scales: { y: { beginAtZero: true } },
             onClick: (event, activeElements) => {
               if (activeElements.length > 0) {
                 const index = activeElements[0].index;
-                const career = labels[index];
-                currentFilters.career = career;
+                currentFilters.career = labels[index];
                 renderDashboard();
               }
             }
@@ -200,17 +211,11 @@
       }
 
       function createTypeChart(filteredData) {
-        if (typeChart) {
-          typeChart.destroy();
-        }
+        if (typeChart) typeChart.destroy();
         const typeCounts = {};
         filteredData.forEach(student => {
           const type = student[' Tipo Alumno'];
-          if (type in typeCounts) {
-            typeCounts[type]++;
-          } else {
-            typeCounts[type] = 1;
-          }
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
         });
         const labels = Object.keys(typeCounts);
         const values = Object.values(typeCounts);
@@ -222,15 +227,10 @@
             datasets: [{ data: values, borderWidth: 1, backgroundColor: ['#0078D4', '#FFC000'] }]
           },
           options: {
-            title: {
-              display: true,
-              text: 'Tipos de Alumnos'
-            },
             onClick: (event, activeElements) => {
               if (activeElements.length > 0) {
                 const index = activeElements[0].index;
-                const type = labels[index];
-                currentFilters.type = type;
+                currentFilters.type = labels[index];
                 renderDashboard();
               }
             }
@@ -239,17 +239,11 @@
       }
 
       function createGratuidadChart(filteredData) {
-        if (gratuityChart) {
-          gratuityChart.destroy();
-        }
+        if (gratuityChart) gratuityChart.destroy();
         const gratuidadCounts = {};
         filteredData.forEach(student => {
           const gratuidad = student.Gratuidad;
-          if (gratuidad in gratuidadCounts) {
-            gratuidadCounts[gratuidad]++;
-          } else {
-            gratuidadCounts[gratuidad] = 1;
-          }
+          gratuidadCounts[gratuidad] = (gratuidadCounts[gratuidad] || 0) + 1;
         });
         const labels = Object.keys(gratuidadCounts);
         const values = Object.values(gratuidadCounts);
@@ -261,15 +255,10 @@
             datasets: [{ data: values, borderWidth: 1, backgroundColor: ['#0078D4', '#FFC000'] }]
           },
           options: {
-            title: {
-              display: true,
-              text: 'Distribución de Gratuidad'
-            },
             onClick: (event, activeElements) => {
               if (activeElements.length > 0) {
                 const index = activeElements[0].index;
-                const gratuidad = labels[index];
-                currentFilters.gratuidad = gratuidad;
+                currentFilters.gratuidad = labels[index];
                 renderDashboard();
               }
             }
@@ -291,12 +280,18 @@
         });
       }
 
+      function updateTotalStudents(filteredData) {
+        const totalStudentsText = document.getElementById('totalStudentsText');
+        totalStudentsText.textContent = `Total: ${filteredData.length} alumnos`;
+      }
+
       function renderDashboard() {
         const filteredData = filterData(students, currentFilters);
         createCareerChart(filteredData);
         createTypeChart(filteredData);
         createGratuidadChart(filteredData);
         createTable(filteredData);
+        updateTotalStudents(filteredData);
       }
 
       Papa.parse('data.csv', {
