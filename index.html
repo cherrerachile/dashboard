@@ -1,14 +1,38 @@
 <html>
   <head>
-    <title>Dashboard Alumnos Pendientes de Matrícula</title>
+    <title>Dashboard Alumnos Pendientes de Matrícula - Estilo Tarjetas</title>
     <style>
-      body { background-color: white; }
-      #dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); grid-gap: 20px; }
-      #filters { grid-column: 1 / -1; }
-      #careerChart { grid-column: 1 / 2; }
-      #typeChart { grid-column: 2 / 3; }
-      #gratuityChart { grid-column: 3 / 4; }
-      #studentTable { grid-column: 1 / -1; }
+      body {
+        background-color: white;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      #dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-gap: 20px;
+      }
+      .dashboard-item {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: #ffffff;
+        transition: box-shadow 0.3s ease;
+      }
+      .dashboard-item:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .dashboard-item h3 {
+        color: #0078D4;
+        font-size: 18px;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      #filters {
+        grid-column: 1 / -1;
+      }
       table {
         width: 100%;
         border-collapse: collapse;
@@ -16,35 +40,65 @@
       table th, table td {
         border: 1px solid #ddd;
         padding: 8px;
+        text-align: left;
       }
       table th {
-        background-color: #f2f2f2;
+        background-color: #f5f5f5;
+        color: #333;
+      }
+      select, button {
+        margin: 5px 0;
+        padding: 5px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      button {
+        background-color: #0078D4;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #005a9e;
+      }
+      canvas {
+        max-width: 100%;
+        height: auto !important;
       }
     </style>
   </head>
   <body>
     <div id="dashboard">
-      <p>Bienvenido al Dashboard de Alumnos Pendientes de Matrícula. Usa los filtros para ver datos específicos.</p>
-      <div id="filters">
-        <label for="careerSelect">Carrera:</label>
-        <select id="careerSelect"></select>
-        <label for="typeSelect">Tipo de Alumno:</label>
-        <select id="typeSelect"></select>
-        <label for="gratuitySelect">Gratuidad:</label>
-        <select id="gratuitySelect"></select>
-        <button id="resetFilters">Resetear Filtros</button>
+      <div class="dashboard-item">
+        <h3>Filtros</h3>
+        <div id="filters">
+          <label for="careerSelect">Carrera:</label>
+          <select id="careerSelect"></select>
+          <br>
+          <label for="typeSelect">Tipo de Alumno:</label>
+          <select id="typeSelect"></select>
+          <br>
+          <label for="gratuitySelect">Gratuidad:</label>
+          <select id="gratuitySelect"></select>
+          <br>
+          <button id="resetFilters">Resetear Filtros</button>
+        </div>
       </div>
-      <div>
+      <div class="dashboard-item">
+        <h3>Estudiantes por Carrera</h3>
         <canvas id="careerChart"></canvas>
       </div>
-      <div>
+      <div class="dashboard-item">
+        <h3>Tipos de Alumnos</h3>
         <canvas id="typeChart"></canvas>
       </div>
-      <div>
+      <div class="dashboard-item">
+        <h3>Distribución de Gratuidad</h3>
         <canvas id="gratuityChart"></canvas>
       </div>
-      <div id="studentTable">
-        <table>
+      <div class="dashboard-item">
+        <h3>Lista de Estudiantes</h3>
+        <table id="studentTable">
           <caption>Lista de Alumnos</caption>
           <thead>
             <tr>
@@ -66,27 +120,25 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1/dist/chart.min.js"></script>
     <script>
-      window.students = null;
-      window.currentFilters = {
+      let students = null;
+      let currentFilters = {
         career: 'All',
         type: 'All',
-        gratuity: 'All'
+        gratuidad: 'All'
       };
-      window.careerChart = null;
-      window.typeChart = null;
-      window.gratuityChart = null;
+      let careerChart = null;
+      let typeChart = null;
+      let gratuityChart = null;
 
       function getUniqueValues(data, column) {
         const values = new Set();
-        data.forEach((row) => {
-          values.add(row[column]);
-        });
+        data.forEach(row => values.add(row[column]));
         return Array.from(values);
       }
 
       function populateSelect(selectId, options) {
         const select = document.getElementById(selectId);
-        options.forEach((option) => {
+        options.forEach(option => {
           const opt = document.createElement('option');
           opt.value = option;
           opt.text = option;
@@ -95,20 +147,20 @@
       }
 
       function filterData(data, filters) {
-        return data.filter((student) => {
+        return data.filter(student => {
           const careerMatch = filters.career === 'All' || student['CARRERA 2024'] === filters.career;
           const typeMatch = filters.type === 'All' || student[' Tipo Alumno'] === filters.type;
-          const gratuityMatch = filters.gratuity === 'All' || student.Gratuidad === filters.gratuity;
-          return careerMatch && typeMatch && gratuityMatch;
+          const gratuidadMatch = filters.gratuidad === 'All' || student.Gratuidad === filters.gratuidad;
+          return careerMatch && typeMatch && gratuidadMatch;
         });
       }
 
       function createCareerChart(filteredData) {
-        if (window.careerChart) {
-          window.careerChart.destroy();
+        if (careerChart) {
+          careerChart.destroy();
         }
         const careerCounts = {};
-        filteredData.forEach((student) => {
+        filteredData.forEach(student => {
           const career = student['CARRERA 2024'];
           if (career in careerCounts) {
             careerCounts[career]++;
@@ -119,23 +171,27 @@
         const labels = Object.keys(careerCounts);
         const values = Object.values(careerCounts);
         const ctx = document.getElementById('careerChart').getContext('2d');
-        window.careerChart = new Chart(ctx, {
+        careerChart = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: labels,
-            datasets: [{ label: 'Número de Alumnos', data: values, borderWidth: 1, borderColor: '#0078D4', fill: false }]
+            datasets: [{ label: 'Número de Estudiantes', data: values, borderWidth: 1, borderColor: '#0078D4', backgroundColor: '#0078D4', fill: false }]
           },
           options: {
             title: {
               display: true,
-              text: 'Alumnos por Carrera'
+              text: 'Estudiantes por Carrera'
             },
-            scales: { y: { beginAtZero: true } },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
             onClick: (event, activeElements) => {
               if (activeElements.length > 0) {
                 const index = activeElements[0].index;
                 const career = labels[index];
-                window.currentFilters.career = career;
+                currentFilters.career = career;
                 renderDashboard();
               }
             }
@@ -143,12 +199,12 @@
         });
       }
 
-      function createTypePieChart(filteredData) {
-        if (window.typeChart) {
-          window.typeChart.destroy();
+      function createTypeChart(filteredData) {
+        if (typeChart) {
+          typeChart.destroy();
         }
         const typeCounts = {};
-        filteredData.forEach((student) => {
+        filteredData.forEach(student => {
           const type = student[' Tipo Alumno'];
           if (type in typeCounts) {
             typeCounts[type]++;
@@ -159,7 +215,7 @@
         const labels = Object.keys(typeCounts);
         const values = Object.values(typeCounts);
         const ctx = document.getElementById('typeChart').getContext('2d');
-        window.typeChart = new Chart(ctx, {
+        typeChart = new Chart(ctx, {
           type: 'pie',
           data: {
             labels: labels,
@@ -174,7 +230,7 @@
               if (activeElements.length > 0) {
                 const index = activeElements[0].index;
                 const type = labels[index];
-                window.currentFilters.type = type;
+                currentFilters.type = type;
                 renderDashboard();
               }
             }
@@ -182,23 +238,23 @@
         });
       }
 
-      function createGratuidadPieChart(filteredData) {
-        if (window.gratuityChart) {
-          window.gratuityChart.destroy();
+      function createGratuidadChart(filteredData) {
+        if (gratuityChart) {
+          gratuityChart.destroy();
         }
-        const gratuityCounts = {};
-        filteredData.forEach((student) => {
-          const gratuity = student.Gratuidad;
-          if (gratuity in gratuityCounts) {
-            gratuityCounts[gratuity]++;
+        const gratuidadCounts = {};
+        filteredData.forEach(student => {
+          const gratuidad = student.Gratuidad;
+          if (gratuidad in gratuidadCounts) {
+            gratuidadCounts[gratuidad]++;
           } else {
-            gratuityCounts[gratuity] = 1;
+            gratuidadCounts[gratuidad] = 1;
           }
         });
-        const labels = Object.keys(gratuityCounts);
-        const values = Object.values(gratuityCounts);
+        const labels = Object.keys(gratuidadCounts);
+        const values = Object.values(gratuidadCounts);
         const ctx = document.getElementById('gratuityChart').getContext('2d');
-        window.gratuityChart = new Chart(ctx, {
+        gratuityChart = new Chart(ctx, {
           type: 'pie',
           data: {
             labels: labels,
@@ -207,13 +263,13 @@
           options: {
             title: {
               display: true,
-              text: 'Estado de Gratuidad'
+              text: 'Distribución de Gratuidad'
             },
             onClick: (event, activeElements) => {
               if (activeElements.length > 0) {
                 const index = activeElements[0].index;
-                const gratuity = labels[index];
-                window.currentFilters.gratuity = gratuity;
+                const gratuidad = labels[index];
+                currentFilters.gratuidad = gratuidad;
                 renderDashboard();
               }
             }
@@ -224,7 +280,7 @@
       function createTable(filteredData) {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        filteredData.forEach((student) => {
+        filteredData.forEach(student => {
           const row = document.createElement('tr');
           for (const key in student) {
             const cell = document.createElement('td');
@@ -236,45 +292,46 @@
       }
 
       function renderDashboard() {
-        const filteredData = filterData(window.students, window.currentFilters);
+        const filteredData = filterData(students, currentFilters);
         createCareerChart(filteredData);
-        createTypePieChart(filteredData);
-        createGratuidadPieChart(filteredData);
+        createTypeChart(filteredData);
+        createGratuidadChart(filteredData);
         createTable(filteredData);
       }
 
       Papa.parse('data.csv', {
         download: true,
         header: true,
-        complete: (results) => {
-          window.students = results.data;
-          window.careers = getUniqueValues(window.students, 'CARRERA 2024');
-          window.types = getUniqueValues(window.students, ' Tipo Alumno');
-          window.gratuities = getUniqueValues(window.students, 'Gratuidad');
-          populateSelect('careerSelect', ['All', ...window.careers]);
-          populateSelect('typeSelect', ['All', ...window.types]);
-          populateSelect('gratuitySelect', ['All', ...window.gratuities]);
-          document.getElementById('careerSelect').addEventListener('change', (e) => {
-            window.currentFilters.career = e.target.value;
+        trimHeaders: true,
+        complete: results => {
+          students = results.data;
+          const careers = getUniqueValues(students, 'CARRERA 2024');
+          const types = getUniqueValues(students, ' Tipo Alumno');
+          const gratuities = getUniqueValues(students, 'Gratuidad');
+          populateSelect('careerSelect', ['All', ...careers]);
+          populateSelect('typeSelect', ['All', ...types]);
+          populateSelect('gratuitySelect', ['All', ...gratuities]);
+          document.getElementById('careerSelect').addEventListener('change', e => {
+            currentFilters.career = e.target.value;
             renderDashboard();
           });
-          document.getElementById('typeSelect').addEventListener('change', (e) => {
-            window.currentFilters.type = e.target.value;
+          document.getElementById('typeSelect').addEventListener('change', e => {
+            currentFilters.type = e.target.value;
             renderDashboard();
           });
-          document.getElementById('gratuitySelect').addEventListener('change', (e) => {
-            window.currentFilters.gratuity = e.target.value;
+          document.getElementById('gratuitySelect').addEventListener('change', e => {
+            currentFilters.gratuidad = e.target.value;
             renderDashboard();
           });
           document.getElementById('resetFilters').addEventListener('click', () => {
-            window.currentFilters.career = 'All';
-            window.currentFilters.type = 'All';
-            window.currentFilters.gratuity = 'All';
+            currentFilters.career = 'All';
+            currentFilters.type = 'All';
+            currentFilters.gratuidad = 'All';
             renderDashboard();
           });
           renderDashboard();
         },
-        error: (error) => {
+        error: error => {
           console.error('Error cargando datos:', error);
           document.getElementById('dashboard').innerHTML = '<p>Error cargando datos. Por favor, verifica el archivo CSV.</p>';
         }
